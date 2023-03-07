@@ -1,0 +1,22 @@
+/*1*/ SELECT * FROM `books` WHERE price IS NULL OR price=0;
+/*2*/ SELECT * FROM `books` WHERE price IS NOT NULL AND edition IS NULL;
+/*3*/ SELECT * FROM `books` WHERE date_ IS NULL;
+/*4*/ SELECT * FROM `books` WHERE (NOW()  - date_) <= 365;
+/*5*/ SELECT * FROM `books` WHERE new_products = "Yes" ORDER BY price ASC;
+/*6*/ SELECT * FROM `books` WHERE pages BETWEEN 300 AND 400 ORDER BY name DESC;
+/*7*/ SELECT * FROM `books` WHERE price BETWEEN 20 AND 40 ORDER BY date_ DESC;
+/*8*/ SELECT * FROM `books` ORDER BY name ASC, price DESC;
+/*9*/ SELECT * FROM `books` WHERE (price / pages) < 0.1;
+/*10*/ SELECT length(name), UPPER(SUBSTRING(name, 1, 20)) AS `Result` FROM `books`;
+/*11*/ SELECT UPPER(CONCAT(LEFT(name, 10), '...', RIGHT(name, 10))) FROM `books`;
+/*12*/ SELECT name, date_ , DAYNAME(date_) AS 'day', MONTHNAME(date_) AS `month`, YEAR(date_) AS `year` FROM `books`;
+/*13*/ SELECT name, date_, DATE_FORMAT(date_, '%d/%m/%Y') AS `date dd/mm/yyyy` FROM `books`;
+/*14*/ SELECT code_ , price AS `USD`, `price` * 36,45 AS `UAH`, `price` * 1.06 AS `EUR` FROM `books`;
+/*15*/ SELECT code_, price, `price` * 36,45 AS `UAH`, TRUNCATE(price, 0) AS 'truncated price', ROUND(price, 0) AS 'rounded price' FROM `books`;
+/*16*/ INSERT INTO books(number, code_, new_products, name, price, edition, pages, format, date_, printing, topic, category) VALUES
+       (248, 5120, 'No', 'Інтерактивний підручник з інформатики', 20.1, 'Києво-Могилянська академія', 450, '70x100/16', '2020-01-20', 5000, 'Використання ПК в цілому', 'Підручники');
+/*17*/ INSERT INTO books(number, code_, name, price, edition, pages, topic) VALUES
+       (249, 5220, 'Інформаційні системи', 50.50, 'Києво-Могилянська академія', 350, 'Використання ПК в цілому');
+/*18*/ DELETE FROM `books` WHERE YEAR(date_) < 1990;
+/*19*/ UPDATE `books` SET date_ = NOW() WHERE date_ IS NULL;
+/*20*/ UPDATE `books` SET new_products = 'Yes' WHERE YEAR(date_) > 2005;
