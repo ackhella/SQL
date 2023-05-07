@@ -1,0 +1,166 @@
+1.    Вивести значення наступних колонок: назва книги, ціна, назва видавництва, формат.
+	DELIMITER //
+	DROP PROCEDURE IF EXISTS GetInfo//
+	CREATE PROCEDURE GetInfo()
+	BEGIN
+	SELECT books.name, price, publishernames.name, bookformats.format FROM books JOIN publishernames ON books.edition = publishernames.id JOIN bookformats ON books.format = bookformats.id;
+	END //
+	DELIMITER ;
+	CALL GetInfo();
+
+2.    Вивести значення наступних колонок: тема, категорія, назва книги, назва видавництва. Фільтр по темам і категоріям.
+	DELIMITER //
+	DROP PROCEDURE IF EXISTS GetInfo//
+	CREATE PROCEDURE GetInfo()
+	BEGIN
+	SELECT books.name, publishernames.name, topics.topic, categories.category FROM books JOIN publishernames ON books.edition = publishernames.id JOIN topics ON books.topic = topics.id 
+	JOIN categories ON books.category = categories.id ORDER BY topics.topic, categories.category;
+	END //
+	DELIMITER ;
+	CALL GetInfo();
+
+3.    Вивести книги видавництва 'BHV', видані після 2000 р
+	DELIMITER //
+	DROP PROCEDURE IF EXISTS GetInfo//
+	CREATE PROCEDURE GetInfo(edition_id int, year_ int)
+	BEGIN
+    	SELECT * FROM books WHERE edition = edition_id AND YEAR(date_) > year_;
+	END //
+	DELIMITER ;
+	CALL GetInfo(1, 2000);
+
+4.    Вивести загальну кількість сторінок по кожній назві категорії. Фільтр по спадаючій...
+	DELIMITER //
+	DROP PROCEDURE IF EXISTS GetInfo//
+	CREATE PROCEDURE GetInfo() 
+	BEGIN 
+	SELECT categories.category, SUM(books.pages) AS total_pages FROM books JOIN categories ON books.category = categories.id GROUP BY books.category ORDER BY total_pages DESC;
+	END //
+	DELIMITER ;
+	CALL GetInfo();
+	
+	/ зростанню кількості сторінок.
+
+	DELIMITER //
+	DROP PROCEDURE IF EXISTS GetInfo//
+	CREATE PROCEDURE GetInfo() 
+	BEGIN 
+	SELECT categories.category, SUM(books.pages) AS total_pages FROM books JOIN categories ON books.category = categories.id GROUP BY books.category ORDER BY total_pages ASC; 
+	END //
+	DELIMITER ;
+	CALL GetInfo();
+
+5.    Вивести середню вартість книг по темі 'Використання ПК' і категорії 'Linux'.
+	DELIMITER //
+	DROP PROCEDURE IF EXISTS GetInfo//
+	CREATE PROCEDURE GetInfo(topic_name varchar(200), category_name varchar(100))
+	BEGIN 
+	SELECT AVG(books.price) AS total_price, topics.topic, categories.category FROM books JOIN categories ON books.category = categories.id JOIN topics ON books.topic = topics.id 
+	WHERE topics.topic = topic_name AND categories.category = category_name GROUP BY topics.topic, categories.category; 
+	END //
+	DELIMITER ;
+	CALL GetInfo('Використання ПК', Linux');
+
+6.    Вивести всі дані універсального відношення.
+	DELIMITER //
+	DROP PROCEDURE IF EXISTS GetInfo//
+	CREATE PROCEDURE GetInfo()
+	BEGIN 
+	SELECT books.number, books.code_, books.name, books.new_products, books.price, books.pages, bookformats.format, books.date_, books.printing, topics.topic, categories.category, publishernames.name 
+	FROM books LEFT JOIN bookformats ON books.format = bookformats.id LEFT JOIN topics ON books.topic = topics.id LEFT JOIN categories ON books.category = categories.id LEFT JOIN publishernames ON books.edition = publishernames.id;
+    	END //
+	DELIMITER ;
+	CALL GetInfo();
+
+7.    Вивести пари книг, що мають однакову кількість сторінок.
+	DELIMITER //
+	DROP PROCEDURE IF EXISTS GetInfo//
+	CREATE PROCEDURE GetInfo()
+	BEGIN 
+    	SELECT DISTINCT books1.name as book_name1, books2.name as book_name2, books1.pages FROM books AS books1 JOIN books AS books2 ON books1.pages = books2.pages AND books1.number < books2.number;
+	END //
+	DELIMITER ;
+	CALL GetInfo();
+
+8.    Вивести тріади книг, що мають однакову ціну.
+	DELIMITER //
+	DROP PROCEDURE IF EXISTS GetInfo//
+	CREATE PROCEDURE GetInfo()
+	BEGIN 
+    	SELECT DISTINCT books1.name as book1, books2.name as book2, books3.name as book3, books1.price FROM books AS books1 
+	JOIN books AS books2 ON books1.price = books2.price AND books1.number < books2.number 
+	JOIN books AS books3 ON books1.price = books3.price AND books2.price = books3.price AND books1.number > books3.number;
+	END //
+	DELIMITER ;
+	CALL GetInfo();
+
+9.    Вивести всі книги категорії 'C ++'.
+	DELIMITER //
+	DROP PROCEDURE IF EXISTS GetInfo//
+	CREATE PROCEDURE GetInfo(lang varchar(50))
+	BEGIN 
+    	SELECT * FROM books WHERE category = (SELECT id FROM categories WHERE categories.category REGEXP lang);
+	END //
+	DELIMITER ;
+	CALL GetInfo('C\\++');
+
+10.    Вивести список видавництв, у яких розмір книг перевищує 400 сторінок.
+	DELIMITER //
+	DROP PROCEDURE IF EXISTS GetInfo//
+	CREATE PROCEDURE GetInfo(pages_ int)
+	BEGIN 
+    	SELECT * FROM publishernames WHERE (SELECT MIN(pages) FROM books WHERE books.edition = publishernames.id) > pages_;
+	END //
+	DELIMITER ;
+	CALL GetInfo(400);
+
+11.    Вивести список категорій за якими більше 3-х книг.
+	DELIMITER //
+	DROP PROCEDURE IF EXISTS GetInfo//
+	CREATE PROCEDURE GetInfo(books_count int)
+	BEGIN 
+    	SELECT * FROM categories WHERE (SELECT COUNT(*) FROM books WHERE books.category = categories.id) > books_count;
+	END //
+	DELIMITER ;
+	CALL GetInfo(3);
+
+12.    Вивести список книг видавництва 'BHV', якщо в списку є хоча б одна книга цього видавництва.
+	DELIMITER //
+	DROP PROCEDURE IF EXISTS GetInfo//
+	CREATE PROCEDURE GetInfo(pub_name varchar(250))
+	BEGIN 
+    	SELECT * FROM books WHERE EXISTS (SELECT * FROM publishernames WHERE publishernames.name REGEXP pub_name AND publishernames.id = books.edition);
+	END //
+	DELIMITER ;
+	CALL GetInfo('BHV');
+
+13.    Вивести список книг видавництва 'BHV', якщо в списку немає жодної книги цього видавництва.
+	DELIMITER //
+	DROP PROCEDURE IF EXISTS GetInfo//
+	CREATE PROCEDURE GetInfo(pub_name varchar(250))
+	BEGIN 
+    	SELECT * FROM books WHERE NOT EXISTS (SELECT * FROM publishernames WHERE publishernames.name REGEXP pub_name AND publishernames.id = books.edition) 
+	AND edition = (SELECT publishernames.id FROM publishernames WHERE publishernames.name REGEXP pub_name);
+	END //
+	DELIMITER ;
+	CALL GetInfo('BHV');
+
+14.    Вивести відсортоване загальний список назв тем і категорій.
+	DELIMITER //
+	DROP PROCEDURE IF EXISTS GetInfo//
+	CREATE PROCEDURE GetInfo()
+	BEGIN 
+    	(SELECT * FROM topics) UNION (SELECT * FROM categories) ORDER BY topic;
+	END //
+	DELIMITER ;
+	CALL GetInfo();
+
+15.    Вивести відсортований в зворотному порядку загальний список перших слів назв книг і категорій що не повторюються.
+	DELIMITER //
+	DROP PROCEDURE IF EXISTS GetInfo//
+	CREATE PROCEDURE GetInfo()
+	BEGIN 
+    	(SELECT DISTINCT SUBSTRING_INDEX(books.name, ' ', 1) AS firstWord FROM books) UNION (SELECT DISTINCT SUBSTRING_INDEX(categories.category, ' ', 1) FROM categories) ORDER BY firstWord DESC;
+	END //
+	DELIMITER ;
+	CALL GetInfo();
