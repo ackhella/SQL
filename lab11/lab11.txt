@@ -1,0 +1,127 @@
+//Інформаційна система магазину автозапчастин
+
+DROP DATABASE IF EXISTS autoPartsStore;
+CREATE DATABASE autoPartsStore;
+
+//Створення таблиць з даними про запчастини, про категорії, замовлення та покупців
+
+CREATE TABLE autoParts(
+    autoParts_id INT NOT NULL PRIMARY KEY,
+    order_num INT(20) NOT NULL,
+    name VARCHAR(85) NOT NULL,
+    description VARCHAR(150) NOT NULL DEFAULT '',
+    buyer INT(20) NOT NULL,
+    price FLOAT NOT NULL CHECK (price > 0),
+    category INT(20) NOT NULL
+);
+
+CREATE TABLE categories(
+    id INT(20) NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    category VARCHAR(255) NOT NULL
+);
+CREATE TABLE orders (
+    order_number INT(20) NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    autoParts_id INT NOT NULL,
+    is_done BIT DEFAULT 0
+);
+CREATE TABLE buyers (
+    id INT(20) NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(30) UNIQUE NOT NULL,
+    bank_info VARCHAR(80) UNIQUE NOT NULL DEFAULT '0000 0000 0000 0000'
+);
+
+//Додавання зовнішніх ключів та заповнення таблиць
+
+ALTER TABLE autoParts ADD FOREIGN KEY (category) REFERENCES categories(id) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE autoParts ADD FOREIGN KEY (order_num) REFERENCES orders(order_number) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE autoParts ADD FOREIGN KEY (buyer) REFERENCES buyers(id) ON DELETE CASCADE ON UPDATE CASCADE;
+
+
+INSERT INTO categories(category) VALUES 
+	('Гальмівна система'),
+	('Пневмо-гальмівна система'),
+	('Вогні та ліхтарі'), 
+	('Бампери'), 
+	('Аксесуари'), 
+	('Комплектуючі сідла'), 
+	('Автоелектрика'), 
+	('Starline – підшипники і маточини в зборі'), 
+	('Масло моторне'), 
+	('Автохімія');
+INSERT INTO orders(autoParts_id, is_done) VALUES 
+	(8942, 1), 
+	(8942, 1), 	
+	(8972, 1), 
+	(8256, 0), 
+	(8781, 1);
+INSERT INTO buyers(name, bank_info) VALUES 
+	('Ірина Шевченко', '1234567890123426'), 
+	('Максим Волошин', '9876533210987654'), 
+	('Олександра Мельник', '2468135771357902'), 
+	('Віктор Коваленко', '2168135791357000'), 
+	('Наталія Сидоренко', '1204560000123456'), 
+	('Андрій Петренко', '1234567890125869'), 
+	('Сергій Лисенко', '1238888890123456'), 
+	('Юлія Кравченко', '4444567890123456');
+
+INSERT INTO autoParts(autoParts_id, order_num, name, description, buyer, price, category) VALUES 
+	(2, 2, 'Фара', 'Фара ліва full led', 2, 1000, 3),
+	(10, 1, 'Бампер', 'Бампер передній', 3, 10700, 4),
+	(80, 3, 'Колодка', 'Гальмівні колодки Starline', 2, 7000, 1),
+	(1, 4, 'Диск', 'Гальмівні диски Starline', 2, 4500, 1),
+	(100, 5, 'Підшипник', 'Підшипники і маточини Starline', 2, 2300, 8);
+
+//Процедура, що виводить обрані дані
+
+DELIMITER //
+DROP PROCEDURE IF EXISTS GetInfo//
+CREATE PROCEDURE GetInfo()
+BEGIN
+SELECT autoparts.name, autoparts.description, autoparts.price, buyers.name, orders.is_done, categories.category FROM autoparts 
+JOIN buyers ON autoparts.buyer = buyers.id 
+JOIN orders ON autoparts.order_num = orders.order_number 
+JOIN categories ON autoparts.category = categories.id;
+END //
+DELIMITER ;
+CALL GetInfo();
+
+//Тригер, що перевіряє чи виконано замовлення
+
+DROP TRIGGER IF EXISTS check_delivery;
+DELIMITER //
+CREATE TRIGGER check_delivery BEFORE INSERT ON orders FOR EACH ROW
+BEGIN
+IF (NEW.is_done = 0)
+THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Замовлення ще не виконано';
+END IF;
+END//
+DELIMITER ;
+
+//Тригер виводить повідомлення, якщо ціна товару нижча за 100, перевірка відбувається в функції check_price()
+
+DELIMITER//    
+CREATE FUNCTION check_price(@price DECIMAL(10, 2)) 
+RETURNS INT
+AS
+BEGIN
+    DECLARE @valid_price INT;
+    IF @price >= 100 THEN
+        SET @valid_price = 1;
+    ELSE
+        SET @valid_price = 0;
+    END IF;
+    
+    RETURN @valid_price;
+END//
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS validate_price;
+DELIMITER //
+CREATE TRIGGER validate_price BEFORE INSERT ON autoparts FOR EACH ROW
+BEGIN
+    IF NOT check_price(NEW.price) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Ціна товару не може бути нижчою за 100';
+    END IF;
+END//
+DELIMITER ;
