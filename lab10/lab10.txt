@@ -1,0 +1,72 @@
+1.    Створити користувальницький тип даних для зберігання оцінки учня на основі стандартного типу tinyint з можливістю використання порожніх значень.	
+	CREATE TYPE Grade AS TINYINT NULL;
+	GO 
+
+2.    Створити об'єкт-замовчування (default) зі значенням 3.
+	CREATE DEFAULT Grade_default AS 3;	
+	GO
+ 
+3.    Зв'язати об'єкт-замовчування з призначеним для користувача типом даних для оцінки.
+	EXEC sys.sp_bindefault 'Grade_default', 'Grade';
+
+4.    Отримати інформацію про призначений для користувача тип даних.
+	EXEC sys.sp_help 'Grade';
+
+5.    Створити об'єкт-правило (rule): a> = 1 і a <= 5 і зв'язати його з призначеним для користувача типом даних для оцінки.
+	CREATE RULE Grade_rule AS @x >= 1 AND @x <= 5;
+	GO
+	EXEC sys.sp_bindrule 'Grade_rule', 'Grade';
+	GO
+
+6.    Створити таблицю "Успішність студента", використовуючи новий тип даних. У таблиці повинні бути оцінки студента з кількох предметів.
+	CREATE TABLE AcademicValidation                      
+	(
+	id_num INT NOT NULL PRIMARY KEY,
+    	Astophysics Grade,
+    	Programming Grade,
+    	Philosophy Grade,
+	Math Grade,
+	Politics Grade
+	);
+	GO 
+
+	INSERT INTO student_name (id_num, Astophysics, Programming, Philosophy, Math, Politics)    
+	VALUES
+	(10, Олександра Мельник, 2, 5, 5, 5, 5),
+	(5, Віктор Коваленко, 2, 4, 4, 4, 3),
+	(4, Наталія Сидоренко, 2, 2, 3, 4, 5),
+	(7, Ірина Шевченко, 5, 5, 3, 4, 5),
+	(1, Сергій Лисенко, 2, 5, 3, 1, 5);
+	GO
+
+7.    Скасувати всі прив'язки і видалити з бази даних тип даних користувача, замовчування і правило.
+	EXEC sys.sp_unbindrule 'AcademicValidation.Astophysics';
+	EXEC sys.sp_unbindrule 'AcademicValidation.Programming';
+	EXEC sys.sp_unbindrule 'AcademicValidation.Philosophy';
+	EXEC sys.sp_unbindrule 'AcademicValidation.Math';
+	EXEC sys.sp_unbindrule 'AcademicValidation.Politics';
+	GO
+
+	ALTER TABLE AcademicValidation ALTER COLUMN Astophysics INT;
+	ALTER TABLE AcademicValidation ALTER COLUMN Programming INT;
+	ALTER TABLE AcademicValidation ALTER COLUMN Philosophy INT;
+	ALTER TABLE AcademicValidation ALTER COLUMN Math INT;
+	ALTER TABLE AcademicValidation ALTER COLUMN Politics INT;
+	GO
+
+	EXEC sys.sp_unbindrule 'Grade';
+	GO
+
+	EXEC sys.sp_unbindefault 'Grade';
+	GO
+
+	DROP TYPE Grade;
+	GO
+
+	DROP RULE Grade_rule; 
+	GO
+
+	DROP DEFAULT Grade_default; 
+	GO
+	
+	DROP TABLE AcademicValidation;
